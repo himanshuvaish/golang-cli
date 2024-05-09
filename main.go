@@ -14,10 +14,39 @@ type Driver struct {
 	Poles int    `json:"poles"`
 }
 
-var drivers = []Driver{
-	{ID: 1, Name: "Lewis Hamilton", Wins: 95, Poles: 98},
-	{ID: 2, Name: "Sebastian Vettel", Wins: 53, Poles: 57},
-	{ID: 3, Name: "Ayrton Senna", Wins: 41, Poles: 65},
+type DriverStore struct {
+	drivers []Driver
+}
+
+func (ds *DriverStore) AddDriver(driver Driver) {
+	ds.drivers = append(ds.drivers, driver)
+}
+
+func (ds *DriverStore) UpdateDriver(id, wins, poles int) {
+	for i, driver := range ds.drivers {
+		if driver.ID == id {
+			ds.drivers[i].Wins += wins
+			ds.drivers[i].Poles += poles
+			return
+		}
+	}
+}
+
+func (ds *DriverStore) DeleteDriver(id int) {
+	for i, driver := range ds.drivers {
+		if driver.ID == id {
+			ds.drivers = append(ds.drivers[:i], ds.drivers[i+1:]...)
+			return
+		}
+	}
+}
+
+var ds = DriverStore{
+	drivers: []Driver{
+		{ID: 1, Name: "Lewis Hamilton", Wins: 95, Poles: 98},
+		{ID: 2, Name: "Sebastian Vettel", Wins: 53, Poles: 57},
+		{ID: 3, Name: "Ayrton Senna", Wins: 41, Poles: 65},
+	},
 }
 
 func main() {
@@ -46,7 +75,7 @@ func getDriversCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get all drivers",
 		Run: func(cmd *cobra.Command, args []string) {
-			for _, driver := range drivers {
+			for _, driver := range ds.drivers {
 				fmt.Printf("ID: %d, Name: %s, Wins: %d, Poles: %d\n", driver.ID, driver.Name, driver.Wins, driver.Poles)
 			}
 		},
@@ -60,7 +89,7 @@ func getDriverCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			id, _ := strconv.Atoi(args[0])
-			for _, driver := range drivers {
+			for _, driver := range ds.drivers {
 				if driver.ID == id {
 					fmt.Printf("ID: %d, Name: %s, Wins: %d, Poles: %d\n", driver.ID, driver.Name, driver.Wins, driver.Poles)
 					return
@@ -81,7 +110,7 @@ func addDriverCmd() *cobra.Command {
 			wins, _ := strconv.Atoi(args[2])
 			poles, _ := strconv.Atoi(args[3])
 			newDriver := Driver{ID: id, Name: args[1], Wins: wins, Poles: poles}
-			drivers = append(drivers, newDriver)
+			ds.AddDriver(newDriver)
 			fmt.Printf("Added driver: ID: %d, Name: %s, Wins: %d, Poles: %d\n", newDriver.ID, newDriver.Name, newDriver.Wins, newDriver.Poles)
 		},
 	}
@@ -96,11 +125,10 @@ func updateDriverCmd() *cobra.Command {
 			id, _ := strconv.Atoi(args[0])
 			wins, _ := strconv.Atoi(args[1])
 			poles, _ := strconv.Atoi(args[2])
-			for i, driver := range drivers {
+			ds.UpdateDriver(id, wins, poles)
+			for _, driver := range ds.drivers {
 				if driver.ID == id {
-					drivers[i].Wins += wins
-					drivers[i].Poles += poles
-					fmt.Printf("Updated driver: ID: %d, Name: %s, Wins: %d, Poles: %d\n", drivers[i].ID, drivers[i].Name, drivers[i].Wins, drivers[i].Poles)
+					fmt.Printf("Updated driver: ID: %d, Name: %s, Wins: %d, Poles: %d\n", driver.ID, driver.Name, driver.Wins, driver.Poles)
 					return
 				}
 			}
@@ -116,14 +144,8 @@ func deleteDriverCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			id, _ := strconv.Atoi(args[0])
-			for i, driver := range drivers {
-				if driver.ID == id {
-					drivers = append(drivers[:i], drivers[i+1:]...)
-					fmt.Printf("Deleted driver with ID %d\n", id)
-					return
-				}
-			}
-			fmt.Println("Driver not found")
+			ds.DeleteDriver(id)
+			fmt.Printf("Deleted driver with ID %d\n", id)
 		},
 	}
 }
